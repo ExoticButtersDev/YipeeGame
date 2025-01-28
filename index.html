@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click the Yipeee Game</title>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from {opacity: 1;}
+            to {opacity: 0;}
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-15px); }
+            60% { transform: translateY(-8px); }
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: white;
+            color: black;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        h2{
+            font-size: 40px;
+            animation: fadeIn 1s ease-in-out;
+            display: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #targetImage {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            display: none;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        #score, #timer {
+            text-anchor: start;
+            margin: 10px;
+            font-size: 24px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        #startButton {
+            margin-top: 300px;
+            font-size: 24px;
+            padding: 15px 30px;
+            background-color: #808080;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            animation: bounce 3s;
+        }
+
+        #startButton:hover {
+            background-color: #a9a9a9;
+        }
+
+        #countdown {
+            margin-top: 50px;
+            font-size: 80px;
+            display: none;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        #confetti-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            opacity: 0.8;
+            border-radius: 50%;
+            animation: fly 1s ease-out forwards;
+        }
+
+        @keyframes fly {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--x-delta), var(--y-delta)) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="confetti-container"></div>
+    <div class="game-area">
+        <h1>Click the Yipeee Game</h1>
+        <div id="score">Score: 0</div>
+        <div id="timer">Time: 30</div>
+        <h2 id="finalScore">Final Score: 0</h2>
+        <div id="countdown">3</div>
+        <button id="startButton">Start Game</button>
+    </div>
+    <div id="gameContainer">
+        <img id="targetImage" src="/resources/yipeee.webp" alt="Target">
+    </div>
+
+    <audio id="clickSound" src="/resources/sfx.mp3"></audio>
+
+    <script>
+        const confettiContainer = document.getElementById('confetti-container');
+        const gameContainer = document.getElementById('gameContainer');
+        const targetImage = document.getElementById('targetImage');
+        const timerElement = document.getElementById('timer');
+        const scoreElement = document.getElementById('score');
+        const clickSound = document.getElementById('clickSound');
+        const startButton = document.getElementById('startButton');
+        const countdownElement = document.getElementById('countdown');
+        const notificationElement = document.getElementById('notification');
+        const finalScore = document.getElementById('finalScore');
+
+        let score = 0;
+        let timeLeft = 30;
+        let timerInterval;
+
+        function startCountdown(callback) {
+            let countdown = 3;
+            countdownElement.textContent = countdown;
+            countdownElement.style.display = 'block';
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownElement.style.display = 'none';
+                    callback();
+                }
+            }, 1000);
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            scoreElement.textContent = `Score: ${score}`;
+            timerElement.textContent = `Time: ${timeLeft}`;
+
+            timerInterval = setInterval(updateTimer, 1000);
+            targetImage.style.display = 'block';
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timerElement.textContent = `Time: ${timeLeft}`;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function moveImage() {
+            const x = Math.random() * (gameContainer.offsetWidth - targetImage.offsetWidth);
+            const y = Math.random() * (gameContainer.offsetHeight - targetImage.offsetHeight);
+            targetImage.style.left = `${x}px`;
+            targetImage.style.top = `${y}px`;
+        }
+
+        targetImage.addEventListener('click', (e) => {
+            score++;
+            scoreElement.textContent = `Score: ${score}`;
+            clickSound.currentTime = 0;
+            clickSound.play();
+            createConfetti(e.x, e.y, 30);
+            moveImage();
+        });
+
+        function createConfetti(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+
+                const size = Math.random() * 10 + 5;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+
+                const xDelta = `${Math.random() * 400 - 200}px`;
+                const yDelta = `${Math.random() * -600 - 200}px`;
+                confetti.style.setProperty('--x-delta', xDelta);
+                confetti.style.setProperty('--y-delta', yDelta);
+
+                confetti.style.left = `${x}px`;
+                confetti.style.top = `${y}px`;
+
+                confettiContainer.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            targetImage.style.display = 'none';
+            finalScore.textContent = `Final Score: ${score}`;
+            finalScore.style.display = 'block'
+            setTimeout(() => startButton.style.display = 'block', 1000);
+            const rect = finalScore.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            createConfetti(x, y, 40);
+            setTimeout(() => finalScore.style.display = 'none', 2000);
+        }
+
+        startButton.addEventListener('click', () => {
+            startButton.style.display = 'none';
+            startCountdown(startGame);
+        });
+    </script>
+</body>
+</html>
